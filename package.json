@@ -1,0 +1,16 @@
+{
+  "name": "noisebot",
+  "version": "0.0.1",
+  "description": "control sonos with an iron fist",
+  "main": "index.js",
+  "scripts": {
+    "start": "node"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/ambirdsall/noisebot"
+  },
+  "dependencies": {
+    "sonos": "^1.14.1"
+  }
+}

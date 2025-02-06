@@ -1,11 +1,10 @@
 version: "3"
 services:
   sonos:
-    image: chrisns/docker-node-sonos-http-api:latest
+    build: .
     network_mode: "host"
-#     networks:
-#     - outside
-# networks:
-#   outside:
-#     external:
-#       name: "host"
+    volumes:
+      - .:/app
+    environment:
+      - NODE_ENV=development
+      # - NODE_ENV=production
