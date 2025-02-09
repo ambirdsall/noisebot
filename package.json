@@ -4,7 +4,7 @@
   "description": "control sonos with an iron fist",
   "main": "index.js",
   "scripts": {
-    "start": "node"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
