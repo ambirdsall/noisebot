@@ -4,6 +4,8 @@
   "description": "control sonos with an iron fist",
   "main": "index.js",
   "scripts": {
+    "predocker": "docker build .",
+    "docker": "docker run -it --network=host localhost/noisebot_sonos:latest",
     "start": "node index.js"
   },
   "repository": {
