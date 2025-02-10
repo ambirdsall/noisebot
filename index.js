@@ -6,6 +6,19 @@ const {
 
 const snoop = new AsyncDeviceDiscovery()
 
+const camelcase = roomName => roomName.split(' ').reduce(
+  (camel, word) => {
+    // the "f" is for "formatted"
+    let fWord = word.toLowerCase()
+
+    // capitalize the first letter for all but the first word
+    if (camel) {
+      fWord = fWord[0].toUpperCase() + fWord.slice(1)
+    }
+    return camel + fWord
+  },
+  ''
+)
 const listenForKeys = (keymap) => {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -34,15 +47,35 @@ async function main() {
       return {device, deets}
     })
   )
-  const speakers = devices.reduce(
+  const rooms = devices.reduce(
     (knownSpeakers, speaker) => ({
       ...knownSpeakers,
-      [speaker.deets.roomName]: speaker
+      [camelcase(speaker.deets.roomName)]: speaker,
     }), {})
 
   listenForKeys({
-    l() { console.log(Object.keys(speakers)) },
-    r() { console.log(`pretend I'm Jupiter and I'm selecting the line in for the record player, grouped with some other speakers`) },
+    l() {
+      console.log(Object.keys(rooms))
+    },
+    r() {
+      const lineIn = rooms.lineIn.deets.roomName
+      Promise.all([
+        rooms.livingRoom.device.joinGroup(lineIn),
+        rooms.kitchen.device.joinGroup(lineIn),
+      ]).then(successes => {
+        console.log(`pretend I'm Jupiter and I just grouped the line in with the living room and kitchen speakers`)
+      }).catch(err => console.warn('wtf: ', err))
+    },
+    g() {
+      const { device, deets } = rooms.lineIn
+      device.getAllGroups()
+        .then(
+          groups => groups
+            .find(g => g.Name.includes(deets.roomName))
+            .ZoneGroupMember.map(({UUID, ZoneName}) => ({UUID, ZoneName}))
+        )
+        .then(groups => console.log('Groups:', groups))
+    },
     q() { process.exit(0) },
   })
 

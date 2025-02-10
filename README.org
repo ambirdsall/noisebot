@@ -6,7 +6,7 @@
 - start record player and hit kbd button to listen (i.e. group =Living Room= + =TV Room= with audio source =Line In=)
 - when record player is playing, hit kbd button(s) to change which speakers are playing audio from turntable
 
-* MVP roadmap [8/13]
+* MVP roadmap [9/14]
 ** hardware [1/3]
 *** DONE rpi as server
 *** cheap as shit mini keyboard [0/2]
@@ -14,7 +14,7 @@
 **** TODO acquire (from aliexpress?)
 **** TODO identify and/or set which keycodes each key sends
 **** if supported, some nice RGB lighting for feedback would be aces
-** software [7/10]
+** software [8/11]
 *** dev/prod envs [4/4]
 **** DONE define dockerized node env for portability (e.g. to rpi zero)
 **** DONE install on rpi 3B
@@ -36,17 +36,24 @@ Here are the steps to follow for ≈equivalent set up on rpi zero
 ******** define a static IP address for each device
 ******* options 2-n :: permitlist sonos devices some other way?
 idk what the options here even are tbh
-*** interact with sonos [1/2]
+*** interact with sonos [2/3]
 **** DONE get list of devices
-**** TODO set group to play specific devices together
-***** =Line In= must be in group for this use case
+**** DONE set group to play specific devices together
+***** =Line In= must be in group for this use case, convenient
 ***** use =sonos.joinGroup('Line In')= on other device objects to group with =Line In=
-**** set source for a group to =Line In=
+**** TODO ensure audio source for group is =Line In=
+**** detect if specific device is in some group
+***** I can just naively join/leave the group
+=device.joinGroup('Line In')= and =device.leaveGroup()= ensure the desired end state, but this
+approach could cause Problems (e.g. messing up memberships of an unrelated group someone
+else set up for their own listening in other parts of the house)
+***** but detecting membership status lets us avoid its potential problems
 *** interact with user [2/4]
 **** DONE run script indefinitely as server process
 **** DONE listen for specific keys, run callbacks
-**** wire up actual callbacks to their keys [0/2]
+**** wire up actual callbacks to their own keys [0/2]
 ***** TODO play from =Line In= in =Living Room= + =TV Room=
+this might be done? need to verify audio source stuff.
 ***** TODO cycle speaker list for =Line In= group [0/3]
 I think these are all we want/need, anyway; here's the rotation:
 - [ ] =Living Room= + =TV Room=
