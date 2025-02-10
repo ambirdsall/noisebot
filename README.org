@@ -1,0 +1,58 @@
+#+title: control sonos (stretch goal: with an iron fist)
+"silicon fist"? idk
+
+* end goal
+- rpi + miniature keyboard (1-3 buttons) on desktop by record player in living room
+- start record player and hit kbd button to listen (i.e. group =Living Room= + =TV Room= with audio source =Line In=)
+- when record player is playing, hit kbd button(s) to change which speakers are playing audio from turntable
+
+* MVP roadmap [8/13]
+** hardware [1/3]
+*** DONE rpi as server
+*** cheap as shit mini keyboard [0/2]
+**** any rando USB keyboard can be used for testing
+**** TODO acquire (from aliexpress?)
+**** TODO identify and/or set which keycodes each key sends
+**** if supported, some nice RGB lighting for feedback would be aces
+** software [7/10]
+*** dev/prod envs [4/4]
+**** DONE define dockerized node env for portability (e.g. to rpi zero)
+**** DONE install on rpi 3B
+Here are the steps to follow for ≈equivalent set up on rpi zero
+***** burn aarch64/arm64 build of fedora server onto mini sd
+***** boot up and connect to home wifi
+***** make sure podman or docker is installed
+***** clone noisebot repo
+***** build noisebot image and run container
+***** make sure rpi firewall allows connecting to sonos devices
+**** DONE minimal fedora env installed on rpi
+***** okay, it's the fedora workstation LXQT spin, not fedora server, so it could be minimal-er
+***** but it's fun to develop on the actual pi
+**** DONE fix firewall settings so rpi can connect with sonos devices
+***** set zone for home wifi to =home= or =trusted=
+****** I did =trusted= for simplicity
+****** but it would be better to use =home= and maintain /some/ safeguards
+******* option 1 :: permitlist sonos devices directly by IP
+******** define a static IP address for each device
+******* options 2-n :: permitlist sonos devices some other way?
+idk what the options here even are tbh
+*** interact with sonos [1/2]
+**** DONE get list of devices
+**** TODO set group to play specific devices together
+***** =Line In= must be in group for this use case
+***** use =sonos.joinGroup('Line In')= on other device objects to group with =Line In=
+**** set source for a group to =Line In=
+*** interact with user [2/4]
+**** DONE run script indefinitely as server process
+**** DONE listen for specific keys, run callbacks
+**** wire up actual callbacks to their keys [0/2]
+***** TODO play from =Line In= in =Living Room= + =TV Room=
+***** TODO cycle speaker list for =Line In= group [0/3]
+I think these are all we want/need, anyway; here's the rotation:
+- [ ] =Living Room= + =TV Room=
+- [ ] =Living Room= + =TV Room= + =Kitchen=
+- [ ] =Kitchen=
+
+Left on the cutting room floor:
+- can't think of a good reason to not use the TV :: =Living Room= + =Kitchen=
+- everywhere :: =Living Room= + =TV Room= + =Kitchen= + =Bedroom=
