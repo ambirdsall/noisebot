@@ -8,9 +8,11 @@ const { listenForKeys } = require('./lib/cli')
 
 const snoop = new AsyncDeviceDiscovery()
 
-async function main() {
+async function findLineInEtAl({ maxTries } = { maxTries: Infinity }) {
   let rooms, devices
-  while (!rooms?.lineIn) {
+  let attempts = 0
+  while (!rooms?.lineIn && attempts < maxTries) {
+    attempts = attempts + 1
     process.stdout.write(rooms == null ? 'Finding rooms... ' : `Couldn't find "Line In" device, trying again...`)
     devices = await snoop.discoverMultiple()
     devices = await Promise.all(
@@ -26,6 +28,16 @@ async function main() {
       }), {})
     console.log('✅')
   }
+  if (!rooms?.lineIn && attempts >= maxTries) {
+    console.log(`shit man, i dunno, i can't find the line in box here`)
+    process.exit()
+  }
+  return { rooms, devices }
+}
+
+async function main() {
+  // TODO remove maxTries option here for the actual physical setup
+  const { rooms, devices } = await findLineInEtAl({maxTries: 3})
 
   listenForKeys({
     l() {
