@@ -42,6 +42,9 @@ idk what the options here even are tbh
 ***** =Line In= must be in group for this use case, convenient
 ***** use =sonos.joinGroup('Line In')= on other device objects to group with =Line In=
 **** TODO ensure audio source for group is =Line In=
+I don't think I need to do anything here, but I do want to confirm that: since one of the
+=Line In= features is connecting to analog speakers, there could (at least in theory) be
+another controlling source.
 **** detect if specific device is in some group
 ***** I can just naively join/leave the group
 =device.joinGroup('Line In')= and =device.leaveGroup()= ensure the desired end state, but this
