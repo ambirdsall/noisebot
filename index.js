@@ -52,18 +52,23 @@ const listenForKeys = (keybindings) => {
 }
 
 async function main() {
-  let devices = await snoop.discoverMultiple()
-  devices = await Promise.all(
-    devices.map(async (device) => {
-      const deets = await device.deviceDescription()
-      return {device, deets}
-    })
-  )
-  const rooms = devices.reduce(
-    (knownSpeakers, speaker) => ({
-      ...knownSpeakers,
-      [camelcase(speaker.deets.roomName)]: speaker,
-    }), {})
+  let rooms, devices
+  while (!rooms?.lineIn) {
+    process.stdout.write(rooms == null ? 'Finding rooms... ' : `Couldn't find "Line In" device, trying again...`)
+    devices = await snoop.discoverMultiple()
+    devices = await Promise.all(
+      devices.map(async (device) => {
+        const deets = await device.deviceDescription()
+        return {device, deets}
+      })
+    )
+    rooms = devices.reduce(
+      (knownSpeakers, speaker) => ({
+        ...knownSpeakers,
+        [camelcase(speaker.deets.roomName)]: speaker,
+      }), {})
+    console.log('✅')
+  }
 
   listenForKeys({
     l() {
