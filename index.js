@@ -5,6 +5,7 @@ const {
 
 const { camelcase } = require('./lib/strings')
 const { listenForKeys } = require('./lib/cli')
+const { wait } = require('./lib/time')
 
 const snoop = new AsyncDeviceDiscovery()
 
@@ -43,25 +44,33 @@ async function main() {
     l() {
       console.log(Object.keys(rooms))
     },
-    r() {
-      const lineIn = rooms.lineIn.deets.roomName
+    async r() {
+      const { device, deets } = rooms.lineIn
+      const groups = await device.getAllGroups()
+      const lineInGroup = groups.find(g => g.CoordinatorDevice().host === device.host)
+      if (!lineInGroup) {
+        await rooms.lineIn.device.leaveGroup()
+        await wait(800)
+      }
+      const lineInN = deets.roomName
       Promise.all([
-        rooms.livingRoom.device.joinGroup(lineIn),
-        rooms.kitchen.device.joinGroup(lineIn),
+        rooms.livingRoom.device.joinGroup(lineInN),
+        rooms.kitchen.device.joinGroup(lineInN),
       ]).then(successes => {
         console.log('grouped!')
         setTimeout(() => this.g(), 1000)
       }).catch(err => console.warn('wtf: ', err))
     },
-    g() {
+    async g() {
       const { device, deets } = rooms.lineIn
-      device.getAllGroups()
-        .then(
-          groups => groups
-            .find(g => g.Name.includes(deets.roomName))
-            .ZoneGroupMember.map(({UUID, ZoneName}) => ({UUID, ZoneName}))
-        )
-        .then(groups => console.log('Groups:', groups))
+      const groups = await device.getAllGroups()
+      const lineInGroup = groups.find(g => g.CoordinatorDevice().host === device.host)
+      if (lineInGroup) {
+        console.log(lineInGroup.Name, 'contains:', lineInGroup.ZoneGroupMember.map(m => m.ZoneName))
+      } else {
+        const groupContainingLineIn = groups.find(g => g.ZoneGroupMember.find(m => m.Location.includes(device.host)))
+        console.log(groupContainingLineIn.Name, 'contains:', groupContainingLineIn.ZoneGroupMember.map(m => m.ZoneName))
+      }
     },
   })
 
