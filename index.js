@@ -1,3 +1,6 @@
+const repl = require('node:repl')
+const net = require('node:net')
+
 const {
   DeviceDiscovery,
   AsyncDeviceDiscovery,
@@ -6,6 +9,24 @@ const {
 const { camelcase } = require('./lib/strings')
 const { listenForKeys } = require('./lib/cli')
 const { wait } = require('./lib/time')
+
+const openRepl = () => {
+  // if you change `replSocketPath`, also change the reference in `./bin/repl`
+  const replSocketPath = '/tmp/noisebot-repl.sock'
+  const replServer = net.createServer(socket => {
+    const r = repl.start({
+      input: socket,
+      output: socket,
+      terminal: true,
+      useColors: true,
+    })
+    Object.assign(r.context, rooms, { rooms })
+    r.on('exit', () => socket.end())
+  })
+  replServer.listen(replSocketPath)
+  console.log(`To interact with this process via a node repl, run '<noisebot directory>/bin/repl' in another tty`)
+  return replServer
+}
 
 const snoop = new AsyncDeviceDiscovery()
 
@@ -70,7 +91,9 @@ const makeRoomToggleForSpeakerGroup = coordinatorRoom => async (roomToToggle) =>
 
 async function main() {
   // TODO remove maxTries option here for the actual physical setup
-  const { rooms, devices } = await findLineInEtAl({maxTries: 3})
+  const { rooms } = await findLineInEtAl({maxTries: 3})
+
+  const replServer = openRepl()
 
   const {
     lineIn,
@@ -82,28 +105,11 @@ async function main() {
 
   const toggleRoom = makeRoomToggleForSpeakerGroup(lineIn)
 
-  listenForKeys(closeListener => ({
+  listenForKeys(closer => ({
     "?": () => console.log(Object.keys(rooms)),
     async l() { await toggleRoom(livingRoom) },
     async t() { await toggleRoom(tvRoom) },
     async k() { await toggleRoom(kitchen) },
-    r() {
-      // since the parent process, i.e. key listener, continues, we have to disable those
-      // bindings while the repl is running or shit will get weird
-      this._stopListening()
-
-      // now we party
-      console.log('Entering REPL')
-      const repl = require('node:repl')
-      const r = repl.start()
-      Object.assign(r.context, rooms)
-
-      // now we clean up
-      r.on('exit', () => {
-        console.log('Hope that was helpful!')
-        this._startListening()
-      })
-    },
     async g() {
       const { device, deets } = lineIn
       const groups = await device.getAllGroups()
@@ -115,10 +121,15 @@ async function main() {
         console.log(groupContainingLineIn.Name, 'contains:', groupContainingLineIn.ZoneGroupMember.map(m => m.ZoneName))
       }
     },
+    q() {
+      closer()
+      // TODO ensure replServer.close() for other ways this process may exit (SIGINT et al)
+      replServer.close()
+      process.exit()
+    },
   }))
 
-  console.log('listening')
-  // this train keeps a-rolling until the readline interface is closed (see above)
+  console.log("Now stroke them keys, I'm all ears")
 }
 
 main()

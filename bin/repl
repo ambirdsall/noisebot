@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+socat - UNIX-CONNECT:/tmp/noisebot-repl.sock
