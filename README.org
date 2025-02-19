@@ -1,68 +1,152 @@
 #+title: control sonos (stretch goal: with an iron fist)
 "silicon fist"? idk
 
-* end goal
-- rpi + miniature keyboard (1-3 buttons) on desktop by record player in living room
-- start record player and hit kbd button to listen (i.e. group =Living Room= + =TV Room= with audio source =Line In=)
-- when record player is playing, hit kbd button(s) to change which speakers are playing audio from turntable
+* installation
+This works with docker, so that's a sufficient dependency for use. You can also run it directly if you have a compatible node version installed (there's an =.nvmrc= file defining the expected node version).
 
-* MVP roadmap [9/14]
-** hardware [1/3]
-*** DONE rpi as server
-*** cheap as shit mini keyboard [0/2]
-**** any rando USB keyboard can be used for testing
-**** TODO acquire (from aliexpress?)
-**** TODO identify and/or set which keycodes each key sends
-**** if supported, some nice RGB lighting for feedback would be aces
-** software [8/11]
-*** dev/prod envs [4/4]
-**** DONE define dockerized node env for portability (e.g. to rpi zero)
-**** DONE install on rpi 3B
+I made this project for my own setup, using a cheap mini keyboard [[https://www.aliexpress.us/item/3256807827316893.html][from aliexpress]]:
+[[file:./mini-keeb.avif]]
+
+That keyboard came with a completely useless set of keymappings, which I honestly respect but needed to change. If you too want to remap a similar model of mini keyboard to work with this
+script, that's /sort of/ bundled. The remapping code is a
+git submodule (and cf. project deps, a rust project), so if you're about that life, either clone this repository with the ~--recurse-submodules~ flag or run
+#+begin_src shell
+git submodule init
+git submodule update
+#+end_src
+and then dig into the readme of the =ch57x-keyboard-tool= directory.
+
+* configuration
+lol, j/k
+
+that said, here's the keyboard mapping definition I used:
+The buttons are to control playback and toggle rooms:
+- [b]ack, [p]lay/pause, [f]orwards
+- [t]v room, [l]iving room, [k]itchen
+
+The knob controls volume:
+- [d]own
+- [m]ute
+- [u]p
+
+#+begin_src yaml
+#  buttons on the left, knobs on the right
+orientation: normal
+
+rows: 2
+columns: 3
+knobs: 1
+
+layers:
+  - buttons:
+      - ["b", "p", "f"]
+      - ["t", "l", "k"]
+    knobs:
+      - ccw: "d"
+        press: "m"
+        cw: "u"
+#+end_src
+
+The keyboard chip supports multiple layers, but there's no way to switch them, so I didn't
+bother with multiple =layers= entries. That, plus the lack of QMK-style "do different stuff
+on tap vs hold" functionality means I can't do fancy stuff without additional setup to
+distinguish between keyup and keydown events.
+
+* working notes
+** goals
+- cute setup of rpi + miniature keyboard (1-3 buttons) on desktop next to record player
+- hit kbd buttons to (dis)connect speakers from the =Line In= audio source (i.e. the speaker group coordinated by =Line In=)
+- use kbd knob to control sonos volume
+- stretch goal: control other sonos audio sources/rooms nicely enough to really use
+
+** MVP roadmap [15/17]
+*** hardware [4/4]
+**** DONE rpi as server
+**** cheap as shit mini keyboard [3/3]
+***** any rando USB keyboard can be used for testing
+***** DONE acquire mini keeb with knob from aliexpress
+***** keyboard mappings
+****** DONE identify which keycodes each key sends
+******* literally everything sends =c= lmfao
+- all 6 buttons? =c=
+- knob clockwise? =c=. knob counterclockwise? =c=. knob press?
+****** DONE remap
+******* product listing on aliexpress claimed it comes with software, but lol nope
+******* looks like it can be remapped more nicely with [[https://github.com/kriomant/ch57x-keyboard-tool][this rust tool]] anyway
+******* +some nice RGB lighting for feedback would be aces+
+Still true! But the controls (global led modes which have to be triggered from a compiled
+external program) are way too crude to do anything I'd actually want.
+*** software [11/13]
+**** dev/prod envs [4/4]
+***** DONE define dockerized node env for portability (e.g. to rpi zero)
+***** DONE install on rpi 3B
 Here are the steps to follow for ≈equivalent set up on rpi zero
-***** burn aarch64/arm64 build of fedora server onto mini sd
-***** boot up and connect to home wifi
-***** make sure podman or docker is installed
-***** clone noisebot repo
-***** build noisebot image and run container
-***** make sure rpi firewall allows connecting to sonos devices
-**** DONE minimal fedora env installed on rpi
-***** okay, it's the fedora workstation LXQT spin, not fedora server, so it could be minimal-er
-***** but it's fun to develop on the actual pi
-**** DONE fix firewall settings so rpi can connect with sonos devices
-***** set zone for home wifi to =home= or =trusted=
-****** I did =trusted= for simplicity
-****** but it would be better to use =home= and maintain /some/ safeguards
-******* option 1 :: permitlist sonos devices directly by IP
-******** define a static IP address for each device
-******* options 2-n :: permitlist sonos devices some other way?
+****** burn aarch64/arm64 build of fedora server onto mini sd
+****** boot up and connect to home wifi
+****** make sure podman or docker is installed
+****** clone noisebot repo
+****** build noisebot image and run container
+****** make sure rpi firewall allows connecting to sonos devices
+***** DONE minimal fedora env installed on rpi
+****** okay, it's the fedora workstation LXQT spin, not fedora server, so it could be minimal-er
+****** but it's fun to develop on the actual pi
+***** DONE fix firewall settings so rpi can connect with sonos devices
+****** set zone for home wifi to =home= or =trusted=
+******* I did =trusted= for simplicity
+******* but it would be better to use =home= and maintain /some/ safeguards
+******** option 1 :: permitlist sonos devices directly by IP
+********* define a static IP address for each device
+******** options 2-n :: permitlist sonos devices some other way?
 idk what the options here even are tbh
-*** interact with sonos [2/3]
-**** DONE get list of devices
-**** DONE set group to play specific devices together
-***** =Line In= must be in group for this use case, convenient
-***** use =sonos.joinGroup('Line In')= on other device objects to group with =Line In=
-**** TODO ensure audio source for group is =Line In=
-I don't think I need to do anything here, but I do want to confirm that: since one of the
-=Line In= features is connecting to analog speakers, there could (at least in theory) be
-another controlling source.
-**** detect if specific device is in some group
-***** I can just naively join/leave the group
+**** interact with sonos [4/4]
+***** DONE get list of devices
+***** DONE set group to play specific devices together
+****** =Line In= must be in group for this use case, convenient
+****** use =sonos.joinGroup('Line In')= on other device objects to group with =Line In=
+***** DONE ensure audio source for group is =Line In=
+There's not much use case here besides "don't let an accidental speaker grouping from
+someone's phone break the record player setup", but that's not nothing—and if we ever
+connect analog speakers to the =Line In= box's OG stereo cable output (which would be rad as
+hell tbh), you can go ahead and remove all mention of "accident" from there.
+***** DONE detect if specific device is in some group
+****** I can just naively join/leave the group
 =device.joinGroup('Line In')= and =device.leaveGroup()= ensure the desired end state, but this
 approach could cause Problems (e.g. messing up memberships of an unrelated group someone
 else set up for their own listening in other parts of the house)
-***** but detecting membership status lets us avoid its potential problems
-*** interact with user [2/4]
-**** DONE run script indefinitely as server process
-**** DONE listen for specific keys, run callbacks
-**** wire up actual callbacks to their own keys [0/2]
-***** TODO play from =Line In= in =Living Room= + =TV Room=
-this might be done? need to verify audio source stuff.
-***** TODO cycle speaker list for =Line In= group [0/3]
-I think these are all we want/need, anyway; here's the rotation:
-- [ ] =Living Room= + =TV Room=
-- [ ] =Living Room= + =TV Room= + =Kitchen=
-- [ ] =Kitchen=
+****** but detecting membership status lets us avoid its potential problems
+****** comparing device IP addresses works for
+**** interact with user [3/5]
+***** DONE run script indefinitely as server process
+***** DONE listen for specific keys, run callbacks
+***** wire up actual callbacks to their own keys [1/3]
+****** DONE test bindings
+******* play from =Line In= in =Living Room= + =TV Room=
+******* list speakers
+******* list groups
+****** TODO define room/speaker toggles for =Line In= group [0/3]
+- [ ] t :: =TV Room=
+- [ ] l :: =Living Room=
+- [ ] k :: =Kitchen=
 
-Left on the cutting room floor:
-- can't think of a good reason to not use the TV :: =Living Room= + =Kitchen=
-- everywhere :: =Living Room= + =TV Room= + =Kitchen= + =Bedroom=
+also an option: combine =TV Room= and =Living Room= into ~L~, and free up the artist currently
+known as ~T~ for another use (bedroom? basement? analog Line Out speakers in the office (or
+wherever the turntable is)?)
+****** TODO define volume interactions [0/3]
+- [ ] d :: volume down
+- [ ] m :: mute
+- [ ] u :: volume up
+
+* post-MVP roadmap
+** distinguishing between =keydown= and =keyup= events
+*** okay but why tho
+- holding one or more room toggle keys while adjusting the volume knob only adjusts that room's volume
+- holding a room toggle key =A= while hitting another room toggle key =B= toggle's room =B='s
+  membership in speaker =A='s group instead of the =Line In= device's group
+*** okay so how tho
+**** ~npm install -S xev-emitter~, cf. [[https://github.com/twitchard/nodejs-xev-emitter][the github readme]]
+***** how to start ~xev~ as a child process instead of piping into stdin?
+***** counterpoint: is that even needed?
+***** any dockerization issues?
+**** rewrite keyboard listener completely lol
+***** finite state machine
+***** hmmmmmmmmm let's leave it there, no need to get into the weeds just yet
