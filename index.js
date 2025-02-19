@@ -36,33 +36,48 @@ async function findLineInEtAl({ maxTries } = { maxTries: Infinity }) {
   return { rooms, devices }
 }
 
+const ensureRoomHasOwnGroup = async (coordinatorRoom) => {
+  const { device, deets } = coordinatorRoom
+  const groups = await device.getAllGroups()
+  const coordinatorGroup = groups.find(g => g.CoordinatorDevice().host === device.host)
+  if (!coordinatorGroup) {
+    await device.leaveGroup()
+    // it's annoying, but the change takes some wall clock time to propagate
+    await wait(800)
+  }
+  // we have to re-find the coordinator group in case coordinatorRoom had to leave another group
+  return groups.find(g => g.CoordinatorDevice().host === device.host)
+}
+
 async function main() {
   // TODO remove maxTries option here for the actual physical setup
   const { rooms, devices } = await findLineInEtAl({maxTries: 3})
+
+  const {
+    lineIn,
+    livingRoom,
+    kitchen,
+    tvRoom,
+    bedroom,
+  } = rooms
 
   listenForKeys({
     l() {
       console.log(Object.keys(rooms))
     },
     async r() {
-      const { device, deets } = rooms.lineIn
-      const groups = await device.getAllGroups()
-      const lineInGroup = groups.find(g => g.CoordinatorDevice().host === device.host)
-      if (!lineInGroup) {
-        await rooms.lineIn.device.leaveGroup()
-        await wait(800)
-      }
-      const lineInN = deets.roomName
+      await ensureRoomHasOwnGroup(lineIn)
+      const lineInN = lineIn.deets.roomName
       Promise.all([
-        rooms.livingRoom.device.joinGroup(lineInN),
-        rooms.kitchen.device.joinGroup(lineInN),
+        livingRoom.device.joinGroup(lineInN),
+        kitchen.device.joinGroup(lineInN),
       ]).then(successes => {
         console.log('grouped!')
         setTimeout(() => this.g(), 1000)
       }).catch(err => console.warn('wtf: ', err))
     },
     async g() {
-      const { device, deets } = rooms.lineIn
+      const { device, deets } = lineIn
       const groups = await device.getAllGroups()
       const lineInGroup = groups.find(g => g.CoordinatorDevice().host === device.host)
       if (lineInGroup) {
