@@ -82,21 +82,27 @@ async function main() {
 
   const toggleRoom = makeRoomToggleForSpeakerGroup(lineIn)
 
-  listenForKeys({
+  listenForKeys(closeListener => ({
     "?": () => console.log(Object.keys(rooms)),
-    l() { toggleRoom(livingRoom) },
-    t() { toggleRoom(tvRoom) },
-    k() { toggleRoom(kitchen) },
-    async r() {
-      await ensureRoomHasOwnGroup(lineIn)
-      const lineInN = lineIn.deets.roomName
-      Promise.all([
-        livingRoom.device.joinGroup(lineInN),
-        kitchen.device.joinGroup(lineInN),
-      ]).then(successes => {
-        console.log('grouped!')
-        setTimeout(() => this.g(), 1000)
-      }).catch(err => console.warn('wtf: ', err))
+    async l() { await toggleRoom(livingRoom) },
+    async t() { await toggleRoom(tvRoom) },
+    async k() { await toggleRoom(kitchen) },
+    r() {
+      // since the parent process, i.e. key listener, continues, we have to disable those
+      // bindings while the repl is running or shit will get weird
+      this._stopListening()
+
+      // now we party
+      console.log('Entering REPL')
+      const repl = require('node:repl')
+      const r = repl.start()
+      Object.assign(r.context, rooms)
+
+      // now we clean up
+      r.on('exit', () => {
+        console.log('Hope that was helpful!')
+        this._startListening()
+      })
     },
     async g() {
       const { device, deets } = lineIn
@@ -109,7 +115,7 @@ async function main() {
         console.log(groupContainingLineIn.Name, 'contains:', groupContainingLineIn.ZoneGroupMember.map(m => m.ZoneName))
       }
     },
-  })
+  }))
 
   console.log('listening')
   // this train keeps a-rolling until the readline interface is closed (see above)
