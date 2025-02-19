@@ -49,6 +49,25 @@ const ensureRoomHasOwnGroup = async (coordinatorRoom) => {
   return groups.find(g => g.CoordinatorDevice().host === device.host)
 }
 
+// Is there any difference between a "room" and a "speaker"? No. But we still use both: it
+// better distinguishes the coordinator room's distinct role, but mainly it's just because
+// `makeRoomToggleForRoomGroup` is a *way* shittier name.
+const makeRoomToggleForSpeakerGroup = coordinatorRoom => async (roomToToggle) => {
+  const coordinatorGroup = await ensureRoomHasOwnGroup(coordinatorRoom)
+  const groupName = coordinatorRoom.deets.roomName
+  const { device, deets } = roomToToggle
+  const isInCoordinatorGroup = coordinatorGroup.ZoneGroupMember.find(m => m.Location.includes(device.host))
+
+  // returns a promise you can `await`
+  if (isInCoordinatorGroup) {
+    console.log(`Removing ${deets.roomName} from group ${coordinatorGroup.Name}`)
+    return device.leaveGroup()
+  } else {
+    console.log(`Adding ${deets.roomName} to group ${coordinatorGroup.Name}`)
+    return device.joinGroup(groupName)
+  }
+}
+
 async function main() {
   // TODO remove maxTries option here for the actual physical setup
   const { rooms, devices } = await findLineInEtAl({maxTries: 3})
@@ -61,10 +80,13 @@ async function main() {
     bedroom,
   } = rooms
 
+  const toggleRoom = makeRoomToggleForSpeakerGroup(lineIn)
+
   listenForKeys({
-    l() {
-      console.log(Object.keys(rooms))
-    },
+    "?": () => console.log(Object.keys(rooms)),
+    l() { toggleRoom(livingRoom) },
+    t() { toggleRoom(tvRoom) },
+    k() { toggleRoom(kitchen) },
     async r() {
       await ensureRoomHasOwnGroup(lineIn)
       const lineInN = lineIn.deets.roomName
