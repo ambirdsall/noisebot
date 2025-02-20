@@ -10,7 +10,7 @@ const { camelcase } = require('./lib/strings')
 const { listenForKeys } = require('./lib/cli')
 const { wait } = require('./lib/time')
 
-const openRepl = () => {
+const openRepl = extraContext => {
   // if you change `replSocketPath`, also change the reference in `./bin/repl`
   const replSocketPath = '/tmp/noisebot-repl.sock'
   const replServer = net.createServer(socket => {
@@ -20,7 +20,7 @@ const openRepl = () => {
       terminal: true,
       useColors: true,
     })
-    Object.assign(r.context, rooms, { rooms })
+    Object.assign(r.context, extraContext)
     r.on('exit', () => socket.end())
   })
   replServer.listen(replSocketPath)
@@ -93,7 +93,7 @@ async function main() {
   // TODO remove maxTries option here for the actual physical setup
   const { rooms } = await findLineInEtAl({maxTries: 3})
 
-  const replServer = openRepl()
+  const replServer = openRepl({ rooms, ...rooms })
 
   const {
     lineIn,
