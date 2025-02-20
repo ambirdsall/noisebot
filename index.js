@@ -116,12 +116,56 @@ async function main() {
   } = rooms
 
   const toggleRoom = makeRoomToggleForSpeakerGroup(lineIn)
+  const forRoomsInGroup = makeForRoomsInGroup(rooms)
 
-  listenForKeys(closer => ({
-    "?": () => console.log(Object.keys(rooms)),
+  const roomToggles = {
     async l() { await toggleRoom(livingRoom) },
     async t() { await toggleRoom(tvRoom) },
     async k() { await toggleRoom(kitchen) },
+  }
+  const volumeControls = {
+    async m() {
+      const lineInGroup = await ensureRoomHasOwnGroup(lineIn)
+      // This currently toggles mute status independently for eaach speaker in the group
+      // instead of managing the group as a whole.
+      // TODO if any speaker in group is unmuted, mute all; else unmute all
+      forRoomsInGroup(lineInGroup, async (room) => {
+        const { device } = room
+        await device.setMuted(!await device.getMuted())
+      })
+    },
+    async d() {
+      const lineInGroup = await ensureRoomHasOwnGroup(lineIn)
+      forRoomsInGroup(lineInGroup, async (room) => {
+        const { device, deets } = room
+        const newVolume = await device.getVolume() - 1
+        console.log(`lowering ${deets.roomName} volume to ${newVolume}`)
+        await device.setVolume(newVolume)
+      })
+    },
+    async u() {
+      const lineInGroup = await ensureRoomHasOwnGroup(lineIn)
+      forRoomsInGroup(lineInGroup, async (room) => {
+        const { device, deets } = room
+        const newVolume = await device.getVolume() + 1
+        console.log(`raising ${deets.roomName} volume to ${newVolume}`)
+        await device.setVolume(newVolume)
+      })
+    },
+  }
+  const playbackControls = {
+    async p() {
+      await lineIn.device.togglePlayback()
+    },
+    async b() {
+      await lineIn.device.previous()
+    },
+    async f() {
+      await lineIn.device.next()
+    },
+  }
+  const debugCommands = {
+    "?": () => console.log(Object.keys(rooms)),
     async g() {
       const { device, deets } = lineIn
       const groups = await device.getAllGroups()
@@ -133,6 +177,13 @@ async function main() {
         console.log(groupContainingLineIn.Name, 'contains:', groupContainingLineIn.ZoneGroupMember.map(m => m.ZoneName))
       }
     },
+  }
+
+  listenForKeys(closer => ({
+    ...roomToggles,
+    ...volumeControls,
+    ...playbackControls,
+    ...debugCommands,
     q() {
       closer()
       // TODO ensure replServer.close() for other ways this process may exit (SIGINT et al)
