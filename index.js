@@ -70,6 +70,19 @@ const ensureRoomHasOwnGroup = async (coordinatorRoom) => {
   return groups.find(g => g.CoordinatorDevice().host === device.host)
 }
 
+const isInGroup = (group, device) => {
+  return group.ZoneGroupMember.find(m => m.Location.includes(device.host))
+}
+
+const makeForRoomsInGroup = rooms => (group, cb) => {
+  const groupedRooms = []
+  for (const roomName in rooms) {
+    const room = rooms[roomName]
+    if (isInGroup(group, room.device)) groupedRooms.push(room)
+  }
+  return groupedRooms.map(cb)
+}
+
 // Is there any difference between a "room" and a "speaker"? No. But we still use both: it
 // better distinguishes the coordinator room's distinct role, but mainly it's just because
 // `makeRoomToggleForRoomGroup` is a *way* shittier name.
@@ -77,10 +90,9 @@ const makeRoomToggleForSpeakerGroup = coordinatorRoom => async (roomToToggle) =>
   const coordinatorGroup = await ensureRoomHasOwnGroup(coordinatorRoom)
   const groupName = coordinatorRoom.deets.roomName
   const { device, deets } = roomToToggle
-  const isInCoordinatorGroup = coordinatorGroup.ZoneGroupMember.find(m => m.Location.includes(device.host))
 
   // returns a promise you can `await`
-  if (isInCoordinatorGroup) {
+  if (isInGroup(coordinatorGroup, device)) {
     console.log(`Removing ${deets.roomName} from group ${coordinatorGroup.Name}`)
     return device.leaveGroup()
   } else {
