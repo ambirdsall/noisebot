@@ -137,16 +137,33 @@ async function main() {
 
   const roomToggles = {
     async l() {
-      await ensureLineInIsSource()
-      await toggleRoom(livingRoom)
+      try {
+        console.log("toggling livingRoom")
+        // await ensureLineInIsSource()
+        await toggleRoom(livingRoom)
+      } catch (error) {
+        console.log("error:" + error)
+      }
     },
     async t() {
-      await ensureLineInIsSource()
-      await toggleRoom(tvRoom)
+      try {
+        console.log("toggling tvRoom")
+        // await ensureLineInIsSource()
+        await toggleRoom(tvRoom)
+      } catch (error) {
+        console.log("error:" + error)
+      }
+
     },
     async k() {
-      await ensureLineInIsSource()
-      await toggleRoom(kitchen)
+      try {
+        console.log("toggling kitchen")
+        // await ensureLineInIsSource()
+        await toggleRoom(kitchen)
+      } catch (error) {
+        console.log("error:" + error)
+      }
+
     },
   }
   const volumeControls = {
@@ -182,13 +199,20 @@ async function main() {
   const playbackControls = {
     async p() {
       try {
-        await lineIn.device.togglePlayback()
+        await ensureLineInIsSource()
+        // TODO check if lineIn's source is the line in per se
+        // TODO if so???
+        // TODO if not, togglePlayback
+        // await lineIn.device.togglePlayback()
       } catch (error) {
         console.error(error)
       }
     },
     async b() {
       try {
+        // TODO check if lineIn's source is the line in per se
+        // TODO if so???
+        // TODO if not, previous
         await lineIn.device.previous()
       } catch (error) {
         console.error(error)
@@ -196,6 +220,9 @@ async function main() {
     },
     async f() {
       try {
+        // TODO check if lineIn's source is the line in per se
+        // TODO if so???
+        // TODO if not, next
         await lineIn.device.next()
       } catch (error) {
         console.error(error)
