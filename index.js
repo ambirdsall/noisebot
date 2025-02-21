@@ -105,7 +105,6 @@ async function main() {
   // TODO remove maxTries option here for the actual physical setup
   const { rooms } = await findLineInEtAl({maxTries: 3})
 
-  const replServer = openRepl({ rooms, ...rooms })
 
   const {
     lineIn,
@@ -125,6 +124,16 @@ async function main() {
 
   const toggleRoom = makeRoomToggleForSpeakerGroup(lineIn)
   const forRoomsInGroup = makeForRoomsInGroup(rooms)
+
+  const replServer = openRepl({
+    rooms,
+    ...rooms,
+    isInGroup,
+    forRoomsInGroup,
+    toggleRoom,
+    ensureLineInIsSource,
+    ensureRoomHasOwnGroup,
+  })
 
   const roomToggles = {
     async l() {

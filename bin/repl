@@ -1,3 +1,7 @@
 #!/usr/bin/env bash
 
-socat - UNIX-CONNECT:/tmp/noisebot-repl.sock
+if command -v rlwrap >& /dev/null; then
+    rlwrap socat - UNIX-CONNECT:/tmp/noisebot-repl.sock
+else
+    socat - UNIX-CONNECT:/tmp/noisebot-repl.sock
+fi
