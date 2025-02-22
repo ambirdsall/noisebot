@@ -76,10 +76,10 @@ const isInGroup = (group, device) => {
 
 const makeForRoomsInGroup = rooms => (group, cb) => {
   const groupedRooms = []
-  for (const roomName in rooms) {
+  Object.keys(rooms).sort().forEach(roomName => {
     const room = rooms[roomName]
     if (isInGroup(group, room.device)) groupedRooms.push(room)
-  }
+  })
   return groupedRooms.map(cb)
 }
 
