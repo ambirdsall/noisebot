@@ -167,6 +167,7 @@ async function main() {
     },
   }
   const volumeControls = {
+    _volumeIncrement: 4,
     async m() {
       const lineInGroup = await ensureRoomHasOwnGroup(lineIn)
       // This currently toggles mute status independently for eaach speaker in the group
@@ -181,7 +182,7 @@ async function main() {
       const lineInGroup = await ensureRoomHasOwnGroup(lineIn)
       forRoomsInGroup(lineInGroup, async (room) => {
         const { device, deets } = room
-        const newVolume = await device.getVolume() - 1
+        const newVolume = await device.getVolume() - this._volumeIncrement
         console.log(`lowering ${deets.roomName} volume to ${newVolume}`)
         await device.setVolume(newVolume)
       })
@@ -190,7 +191,7 @@ async function main() {
       const lineInGroup = await ensureRoomHasOwnGroup(lineIn)
       forRoomsInGroup(lineInGroup, async (room) => {
         const { device, deets } = room
-        const newVolume = await device.getVolume() + 1
+        const newVolume = await device.getVolume() + this._volumeIncrement
         console.log(`raising ${deets.roomName} volume to ${newVolume}`)
         await device.setVolume(newVolume)
       })
