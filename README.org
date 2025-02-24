@@ -2,16 +2,48 @@
 "silicon fist"? idk
 
 * installation
+The high level, minimal installation steps are pretty simple:
+- clone the repo, duh
+- have a compatible nodejs version
+- run =npm install=
+
+Here's a more detailed version focusing on my use case: using a generic macropad/mini keyboard with a raspberry pi
+zero w v1.1.
+
+** nodejs
 :PROPERTIES:
 :VISIBILITY: folded
 :END:
-This works with docker, so that's a sufficient dependency for use. You can also run it directly if you have a compatible node version installed (there's an =.nvmrc= file defining the expected node version).
+I tried to make this works with docker:
+- dead simple dependency management
+- runs more or less the same way everywhere
 
+However nice the theory was, in practice, that didn't work: when attempting to run this
+via =podman= on a raspberry pi, I ran out of patience before I succeeded in capturing
+external keyboard events from inside the running container. This means you have to have a
+compatible node version installed (there's an =.nvmrc= file defining the expected node
+version; the tl;dr is I used the most recent LTS version as of writing).
+
+To install that nodejs version directly on an arm6 raspberry pi zero w, I used this approach (with credit to [[https://gist.github.com/stonehippo/f4ef8446226101e8bed3e07a58ea512a][this gist]] by GH user stonehippo):
+#+begin_src shell
+wget https://unofficial-builds.nodejs.org/download/release/v20.18.3/node-v20.18.3-linux-armv6l.tar.xz
+tar -xf node-v20.18.3-linux-armv6l.tar.xz
+sudo mv node-v20.18.3-linux-armv6l.tar.xz /usr/local/node
+cd /usr/bin
+sudo ln -s /usr/local/node/bin/node node
+sudo ln -s /usr/local/node/bin/npm npm
+#+end_src
+if both =node -v= and =npm -v= output the expected versions (=v20.18.3= and =10.8.2=, respectively), it worked.
+
+** mini keyboard remapping software
 I made this project for my own setup, using a cheap mini keyboard [[https://www.aliexpress.us/item/3256807827316893.html][from aliexpress]]:
-[[file:./mini-keeb.avif]]
 
-That keyboard came with a completely useless set of keymappings, which I honestly respect but needed to change. If you too want to remap a similar model of mini keyboard to work with this
-script, that's /sort of/ bundled. The remapping code is a
+[[./mini-keeb.avif]]
+
+That keyboard came with a completely useless set of keymappings—every key, both knob
+directions, and knob presses all sent the =c= keycode—and while honestly, I respect the
+move, it needed to change. If you too want to remap a similar model of mini keyboard to
+work with this script, that's /sort of/ bundled. The remapping code is a
 git submodule (and cf. project deps, a rust project), so if you're about that life, either clone this repository with the ~--recurse-submodules~ flag or run
 #+begin_src shell
 git submodule init
@@ -19,14 +51,7 @@ git submodule update
 #+end_src
 and then dig into the readme of the =ch57x-keyboard-tool= directory.
 
-* configuration
-:PROPERTIES:
-:VISIBILITY: folded
-:END:
-just change the code lol ¯\_(ツ)_/¯
-
-
-That said, here's the keyboard mapping definition I used.  The buttons are to control
+Here's the keyboard mapping definition I used.  The buttons are to control
 playback and toggle rooms, and the knob controls volume (press to toggle mute). For
 convenience of scripting, all functions are mapped to a mnemonic letter key, even media
 functions that have dedicated keycodes:
@@ -60,6 +85,23 @@ The keyboard chip supports multiple layers, but there's no way to switch them, s
 bother with multiple =layers= entries. That, plus the lack of QMK-style "do different stuff
 on tap vs hold" functionality means I can't do fancy stuff without additional setup to
 distinguish between keyup and keydown events (see post-MVP roadmap).
+
+** run automatically when the rasperry pi boots up
+Add something like the following to the raspberry pi's =.bashrc=:
+#+begin_src shell
+# start up noisebot script for "main" tty, but not for ssh logins
+if [[ $(tty) == /dev/tty1 ]]; then
+  cd /path/to/noisebot
+  # hold onto your butts
+  bin/loop
+fi
+#+end_src
+
+* configuration
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
+just change the code lol ¯\_(ツ)_/¯
 
 * goals
 :PROPERTIES:
@@ -144,6 +186,7 @@ else set up for their own listening in other parts of the house)
 **** DONE volume up or down for group
 **** DONE toggle mute
 **** TODO set group audio source to line in
+T
 *** interact with user [5/5]
 :PROPERTIES:
 :VISIBILITY: folded
