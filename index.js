@@ -9,6 +9,7 @@ const {
 const { camelcase } = require('./lib/strings')
 const { listenForKeys } = require('./lib/cli')
 const { wait } = require('./lib/time')
+const { wtf } = require('./lib/logging')
 
 const openRepl = extraContext => {
   // if you change `replSocketPath`, also change the reference in `./bin/repl`
@@ -138,7 +139,6 @@ async function main() {
   const roomToggles = {
     async l() {
       try {
-        console.log("toggling livingRoom")
         // await ensureLineInIsSource()
         await toggleRoom(livingRoom)
       } catch (error) {
@@ -147,7 +147,6 @@ async function main() {
     },
     async t() {
       try {
-        console.log("toggling tvRoom")
         // await ensureLineInIsSource()
         await toggleRoom(tvRoom)
       } catch (error) {
@@ -157,7 +156,6 @@ async function main() {
     },
     async k() {
       try {
-        console.log("toggling kitchen")
         // await ensureLineInIsSource()
         await toggleRoom(kitchen)
       } catch (error) {
@@ -170,7 +168,7 @@ async function main() {
     _volumeIncrement: 4,
     async m() {
       const lineInGroup = await ensureRoomHasOwnGroup(lineIn)
-      // This currently toggles mute status independently for eaach speaker in the group
+      // This currently toggles mute status independently for each speaker in the group
       // instead of managing the group as a whole.
       // TODO if any speaker in group is unmuted, mute all; else unmute all
       forRoomsInGroup(lineInGroup, async (room) => {
@@ -181,67 +179,45 @@ async function main() {
     async d() {
       const lineInGroup = await ensureRoomHasOwnGroup(lineIn)
       forRoomsInGroup(lineInGroup, async (room) => {
+        console.log(`lowering ${deets.roomName} volume to ${newVolume}`)
         const { device, deets } = room
         const newVolume = await device.getVolume() - this._volumeIncrement
-        console.log(`lowering ${deets.roomName} volume to ${newVolume}`)
         await device.setVolume(newVolume)
       })
     },
     async u() {
       const lineInGroup = await ensureRoomHasOwnGroup(lineIn)
       forRoomsInGroup(lineInGroup, async (room) => {
+        console.log(`raising ${deets.roomName} volume to ${newVolume}`)
         const { device, deets } = room
         const newVolume = await device.getVolume() + this._volumeIncrement
-        console.log(`raising ${deets.roomName} volume to ${newVolume}`)
         await device.setVolume(newVolume)
       })
     },
   }
   const playbackControls = {
     async p() {
-      try {
-        await ensureLineInIsSource()
-        // TODO check if lineIn's source is the line in per se
-        // TODO if so???
-        // TODO if not, togglePlayback
-        // await lineIn.device.togglePlayback()
-      } catch (error) {
-        console.error(error)
-      }
+      console.log("Setting Line In as audio source")
+      await ensureLineInIsSource().catch(wtf)
     },
+    // TODO is there a sensible alternate behavior if line in is the audio source?
     async b() {
-      try {
-        // TODO check if lineIn's source is the line in per se
-        // TODO if so???
-        // TODO if not, previous
-        await lineIn.device.previous()
-      } catch (error) {
-        console.error(error)
-      }
+      console.log("Attempting to skip to previous track")
+      await lineIn.device.previous().catch(wtf)
     },
+    // TODO is there a sensible alternate behavior if line in is the audio source?
     async f() {
-      try {
-        // TODO check if lineIn's source is the line in per se
-        // TODO if so???
-        // TODO if not, next
-        await lineIn.device.next()
-      } catch (error) {
-        console.error(error)
-      }
+      console.log("Attempting to skip to next track")
+      await lineIn.device.next().catch(wtf)
     },
   }
   const debugCommands = {
     "?": () => console.log(Object.keys(rooms)),
     async g() {
-      const { device, deets } = lineIn
-      const groups = await device.getAllGroups()
-      const lineInGroup = groups.find(g => g.CoordinatorDevice().host === device.host)
-      if (lineInGroup) {
-        console.log(lineInGroup.Name, 'contains:', lineInGroup.ZoneGroupMember.map(m => m.ZoneName))
-      } else {
-        const groupContainingLineIn = groups.find(g => g.ZoneGroupMember.find(m => m.Location.includes(device.host)))
-        console.log(groupContainingLineIn.Name, 'contains:', groupContainingLineIn.ZoneGroupMember.map(m => m.ZoneName))
-      }
+      const groups = await lineIn.device.getAllGroups()
+      groups.forEach(group => {
+        console.log(group.Name, 'contains:', group.ZoneGroupMember.map(m => m.ZoneName))
+      })
     },
   }
 
@@ -258,7 +234,7 @@ async function main() {
     },
   }))
 
-  console.log("Now stroke them keys, I'm all ears")
+  console.log("keyboard listener is all ears")
 }
 
 main()
