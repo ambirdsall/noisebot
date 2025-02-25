@@ -118,9 +118,9 @@ async function main() {
   const ensureLineInIsSource = async () => {
     const macCleaned = (await lineIn.device.getZoneInfo()).MACAddress.replace(/:/g, '')
 
-    // TODO make play/pause button set this if it's not already the AV source instead of
-    // trying to do some shit that will not work
-    await lineIn.device.setAVTransportURI(`x-rincon-stream:RONCON_${macCleaned}01400`)
+    await lineIn.device.setAVTransportURI(
+      `x-rincon-stream:RINCON_${macCleaned}01400`
+    )
   }
 
   const toggleRoom = makeRoomToggleForSpeakerGroup(lineIn)
@@ -139,7 +139,7 @@ async function main() {
   const roomToggles = {
     async l() {
       try {
-        // await ensureLineInIsSource()
+        await ensureLineInIsSource()
         await toggleRoom(livingRoom)
       } catch (error) {
         console.log("error:" + error)
@@ -147,7 +147,7 @@ async function main() {
     },
     async t() {
       try {
-        // await ensureLineInIsSource()
+        await ensureLineInIsSource()
         await toggleRoom(tvRoom)
       } catch (error) {
         console.log("error:" + error)
@@ -156,7 +156,7 @@ async function main() {
     },
     async k() {
       try {
-        // await ensureLineInIsSource()
+        await ensureLineInIsSource()
         await toggleRoom(kitchen)
       } catch (error) {
         console.log("error:" + error)
