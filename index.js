@@ -179,18 +179,18 @@ async function main() {
     async d() {
       const lineInGroup = await ensureRoomHasOwnGroup(lineIn)
       forRoomsInGroup(lineInGroup, async (room) => {
-        console.log(`lowering ${deets.roomName} volume to ${newVolume}`)
         const { device, deets } = room
         const newVolume = await device.getVolume() - this._volumeIncrement
+        console.log(`lowering ${deets.roomName} volume to ${newVolume}`)
         await device.setVolume(newVolume)
       })
     },
     async u() {
       const lineInGroup = await ensureRoomHasOwnGroup(lineIn)
       forRoomsInGroup(lineInGroup, async (room) => {
-        console.log(`raising ${deets.roomName} volume to ${newVolume}`)
         const { device, deets } = room
         const newVolume = await device.getVolume() + this._volumeIncrement
+        console.log(`raising ${deets.roomName} volume to ${newVolume}`)
         await device.setVolume(newVolume)
       })
     },
