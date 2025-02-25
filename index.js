@@ -102,8 +102,8 @@ const makeRoomToggleForSpeakerGroup = coordinatorRoom => async (roomToToggle) =>
 }
 
 async function main() {
-  // TODO remove maxTries option here for the actual physical setup
-  const { rooms } = await findLineInEtAl({maxTries: 3})
+  // uncomment options arg if you want sane connection limits for testing and development
+  const { rooms } = await findLineInEtAl(/* { maxTries: 3 } */)
 
 
   const {
