@@ -126,16 +126,6 @@ async function main() {
   const toggleRoom = makeRoomToggleForSpeakerGroup(lineIn)
   const forRoomsInGroup = makeForRoomsInGroup(rooms)
 
-  const replServer = openRepl({
-    rooms,
-    ...rooms,
-    isInGroup,
-    forRoomsInGroup,
-    toggleRoom,
-    ensureLineInIsSource,
-    ensureRoomHasOwnGroup,
-  })
-
   const roomToggles = {
     async l() {
       try {
@@ -221,7 +211,7 @@ async function main() {
     },
   }
 
-  listenForKeys(closer => ({
+  const { keymap } = listenForKeys(closer => ({
     ...roomToggles,
     ...volumeControls,
     ...playbackControls,
@@ -233,6 +223,17 @@ async function main() {
       process.exit()
     },
   }))
+
+  const replServer = openRepl({
+    rooms,
+    ...rooms,
+    isInGroup,
+    forRoomsInGroup,
+    toggleRoom,
+    ensureLineInIsSource,
+    ensureRoomHasOwnGroup,
+    keymap,
+  })
 
   console.log("keyboard listener is all ears")
 }
